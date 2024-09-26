@@ -74,29 +74,36 @@ int game(WINDOW* game_window)
   int len = 1;
   int state = 0;
 
+  int f = 0;
+
   while (1) {
     ch = wgetch(game_window);
 
     switch (ch) {
+      case 'q':
+      case 'Q':
+        goto exit_loop;
+        break;
+      case 'm':
+        mouse(game_window, &rx, &ry);
+        break;
       case KEY_UP:
       case KEY_DOWN:
       case KEY_LEFT:
       case KEY_RIGHT:
         dir = ch;
       case ERR:
+      default:
         state = mov_snake(game_window, snake, len, dir);
         if (state == GAME_OVER) {
           goto exit_loop;
         }
-        break;
-      case 'q':
-        goto exit_loop;
-        break;
-      case 'm':
-        mouse(game_window, &rx, &ry);
     }
 
-    napms(500);
+    mvprintw(f++, 200, "Direction: %d, Snake: %p", dir, snake);
+    refresh();
+
+    napms(1000);
   }
   exit_loop: ;
   
@@ -118,44 +125,40 @@ int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir)
   int buffery;
   char body;
 
-  for (int i = len; i ; --i) {
+  for (int i = 0; i < len ; i++) {
     bufferx = snake[i][0];
     buffery = snake[i][1];
     body = (i == 0) ? '%' : '*';
 
+    mvwaddch(game_window, buffery, bufferx, ' ');
     switch (dir) {
       case KEY_UP:
-        mvwaddch(game_window, buffery, bufferx, ' ');
-        buffery++;
+        --buffery;
         if (buffery < 0) {
           return GAME_OVER;
         }
-        mvwaddch(game_window, buffery, bufferx, '*');
         break;
       case KEY_DOWN:
-        mvwaddch(game_window, buffery, bufferx, ' ');
-        buffery--;
+        ++buffery;
         if(buffery > DIMY) {
           return GAME_OVER;
         }
-        mvwaddch(game_window, buffery, bufferx, '*');
         break;
       case KEY_RIGHT:
-        mvwaddch(game_window, buffery, bufferx, ' ');
-        bufferx++;
+        ++bufferx;
         if (bufferx > DIMX) {
           return GAME_OVER;
         }
-        mvwaddch(game_window, buffery, bufferx, '*');
         break;
       default:
-        mvwaddch(game_window, buffery, bufferx, ' ');
-        bufferx--;
+        --bufferx;
         if (bufferx < 0) {
           return GAME_OVER;
         }
-        mvwaddch(game_window, buffery, bufferx, '*');
     }
+    snake[i][0] = bufferx;
+    snake[i][1] = buffery;
+    mvwaddch(game_window, buffery, bufferx, body);
   }
 
   wrefresh(game_window);
