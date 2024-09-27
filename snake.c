@@ -7,10 +7,13 @@
 #define DIMX DIMY*2
 #define MAX_LEN (DIMX-1)*(DIMY-1)
 #define GAME_OVER 1
+#define EATEN 2
 
 int game(WINDOW* game_window);
 void mouse(WINDOW* game_window, int* rx, int* ry);
 int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir);
+int mov_head(int* bufferx, int* buffery, int dir);
+void grow_snake(WINDOW* game_window, int snake[MAX_LEN][2], int* len);
 
 int main(void)
 {
@@ -48,6 +51,8 @@ int main(void)
 
 int game(WINDOW* game_window)
 {
+  keypad(game_window, TRUE);
+
   int ch;
   int startx = DIMX/2;
   int starty = DIMY/2;
@@ -74,8 +79,6 @@ int game(WINDOW* game_window)
   int len = 1;
   int state = 0;
 
-  int f = 0;
-
   while (1) {
     ch = wgetch(game_window);
 
@@ -92,18 +95,19 @@ int game(WINDOW* game_window)
       case KEY_LEFT:
       case KEY_RIGHT:
         dir = ch;
-      case ERR:
+      case ERR: 
       default:
         state = mov_snake(game_window, snake, len, dir);
         if (state == GAME_OVER) {
           goto exit_loop;
         }
-    }
+        else if (state == EATEN) {
+          mouse(game_window, &rx, &ry);
+          grow_snake(game_window, snake, &len);
+        }
+    } 
 
-    mvprintw(f++, 200, "Direction: %d, Snake: %p", dir, snake);
-    refresh();
-
-    napms(1000);
+    napms(500);
   }
   exit_loop: ;
   
@@ -123,46 +127,81 @@ int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir)
   // -_-
   int bufferx;
   int buffery;
-  char body;
+  int prevx;
+  int prevy;
+  char body = '%';
+  char next;
+  int ret_val;
 
   for (int i = 0; i < len ; i++) {
     bufferx = snake[i][0];
     buffery = snake[i][1];
-    body = (i == 0) ? '%' : '*';
-
     mvwaddch(game_window, buffery, bufferx, ' ');
-    switch (dir) {
-      case KEY_UP:
-        --buffery;
-        if (buffery < 0) {
-          return GAME_OVER;
-        }
-        break;
-      case KEY_DOWN:
-        ++buffery;
-        if(buffery > DIMY) {
-          return GAME_OVER;
-        }
-        break;
-      case KEY_RIGHT:
-        ++bufferx;
-        if (bufferx > DIMX) {
-          return GAME_OVER;
+
+    switch (i) {
+      case 0: 
+        body = '%';
+        prevx = bufferx;
+        prevy = buffery;
+        ret_val = mov_head(&bufferx, &buffery, dir);
+        if (ret_val == GAME_OVER) {
+          return ret_val;
         }
         break;
       default:
-        --bufferx;
-        if (bufferx < 0) {
-          return GAME_OVER;
-        }
+        body = '*';
+        bufferx = prevx;
+        buffery = prevy;
+        prevx = snake[i][0];
+        prevy = snake[i][1];
     }
+
     snake[i][0] = bufferx;
     snake[i][1] = buffery;
+    mvwscanw(game_window, buffery, bufferx, "%c", &next); 
+    if (next == '@') {
+      ret_val = EATEN;
+    } 
     mvwaddch(game_window, buffery, bufferx, body);
   }
 
   wrefresh(game_window);
+  return ret_val;
+}
+
+int mov_head(int* bufferx, int* buffery, int dir)
+{
+  switch (dir) {
+      case KEY_UP:
+        --*buffery;
+        if (*buffery <= 0) {
+          return GAME_OVER;
+        }
+        break;
+      case KEY_DOWN:
+        ++*buffery;
+        if(*buffery >= DIMY-1) {
+          return GAME_OVER;
+        }
+        break;
+      case KEY_RIGHT:
+        ++*bufferx;
+        if (*bufferx >= DIMX-1) {
+          return GAME_OVER;
+        }
+        break;
+      default:
+        --*bufferx;
+        if (*bufferx <= 0) {
+          return GAME_OVER;
+        }
+    }
   return 0;
+}
+
+void grow_snake(WINDOW* game_window, int snake[MAX_LEN][2], int* len)
+{
+  return;
 }
 
 void mouse(WINDOW* game_window, int* rx, int* ry)
