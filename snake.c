@@ -12,7 +12,7 @@
 int game(WINDOW* game_window);
 void mouse(WINDOW* game_window, int* rx, int* ry);
 int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir);
-int mov_head(int* bufferx, int* buffery, int dir);
+int mov_head(WINDOW* game_window, int* bufferx, int* buffery, int dir);
 void grow_snake(WINDOW* game_window, int snake[MAX_LEN][2], int* len);
 
 int main(void)
@@ -143,7 +143,7 @@ int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir)
         body = '%';
         prevx = bufferx;
         prevy = buffery;
-        ret_val = mov_head(&bufferx, &buffery, dir);
+        ret_val = mov_head(game_window, &bufferx, &buffery, dir);
         if (ret_val == GAME_OVER) {
           return ret_val;
         }
@@ -157,11 +157,7 @@ int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir)
     }
 
     snake[i][0] = bufferx;
-    snake[i][1] = buffery;
-    mvwscanw(game_window, buffery, bufferx, "%c", &next); 
-    if (next == '@') {
-      ret_val = EATEN;
-    } 
+    snake[i][1] = buffery; 
     mvwaddch(game_window, buffery, bufferx, body);
   }
 
@@ -169,8 +165,9 @@ int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir)
   return ret_val;
 }
 
-int mov_head(int* bufferx, int* buffery, int dir)
+int mov_head(WINDOW* game_window, int* bufferx, int* buffery, int dir)
 {
+  char next;
   switch (dir) {
       case KEY_UP:
         --*buffery;
@@ -196,11 +193,24 @@ int mov_head(int* bufferx, int* buffery, int dir)
           return GAME_OVER;
         }
     }
+  // wtf is happening 
+  mvwscanw(game_window, *buffery, *bufferx, "%c", &next);
+  if (next == '@') {
+    return EATEN;
+  }
   return 0;
 }
 
 void grow_snake(WINDOW* game_window, int snake[MAX_LEN][2], int* len)
 {
+  ++*len;
+  int prevx = snake[*len-1][0];
+  int prevy = snake[*len-1][1];
+
+  snake[*len][0] = prevx;
+  snake[*len][1] = prevy;
+  mvwaddch(game_window, prevy, prevx, '*');
+  wrefresh(game_window);
   return;
 }
 
