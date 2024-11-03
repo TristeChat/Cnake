@@ -7,17 +7,27 @@
 #define DIMX DIMY*2
 #define MAX_LEN (DIMX-1)*(DIMY-1)
 
+/**
+ * States that the game can be in 
+*/
 enum State {
-  GAME_OVER = 1,
+  GOOD,
+  GAME_OVER,
   EATEN
 };
 
+/**
+ * Functions
+*/
 int game(WINDOW* game_window);
 void mouse(WINDOW* game_window, int* rx, int* ry);
-int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir);
-int mov_head(WINDOW* game_window, int* bufferx, int* buffery, int dir);
+enum State mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir);
+enum State mov_head(WINDOW* game_window, int* bufferx, int* buffery, int dir);
 void grow_snake(WINDOW* game_window, int snake[MAX_LEN][2], int* len);
 
+/**
+ * Main initializes the ncurses window 
+*/
 int main(void)
 {
   //if (has_colors() == FALSE) {
@@ -52,6 +62,14 @@ int main(void)
   return 0;
 }
 
+/**
+ * Runs the actual game
+ *
+ * @param game_window ncurses window buffer to write to  
+ *
+ * @return 0
+*/
+
 int game(WINDOW* game_window)
 {
   keypad(game_window, TRUE);
@@ -80,7 +98,7 @@ int game(WINDOW* game_window)
   mouse(game_window, &rx, &ry);
   int dir = KEY_UP;
   int len = 1;
-  int state = 0;
+  enum State state = GOOD;
 
   while (1) {
     ch = wgetch(game_window);
@@ -122,11 +140,19 @@ int game(WINDOW* game_window)
   return 0;
 }
 
-int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir) 
+/**
+ * Moves the snake and updates it's array
+ *
+ * @param game_window   ncurses window buffer to write to  
+ * @param snake         positions of the snake's body
+ * @param len           length of the snake
+ * @param dir           direction it's moving in
+ *
+ * @return              state of the game
+*/
+enum State mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir) 
 {
-  // the array stuff is all wrong
-  // code the part that grows the snake
-  // button part too
+  // I think moving works but EATEN isn't being used idk why
   // -_-
   int bufferx;
   int buffery;
@@ -135,7 +161,7 @@ int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir)
 
   char body = '%';
   char next;
-  int ret_val = 0;
+  enum State ret_val = GOOD;
 
   for (int i = 0; i <= len-1 ; i++) {
     bufferx = snake[i][0];
@@ -173,7 +199,16 @@ int mov_snake(WINDOW* game_window, int snake[MAX_LEN][2], int len, int dir)
   return ret_val;
 }
 
-int mov_head(WINDOW* game_window, int* bufferx, int* buffery, int dir)
+/**
+ * Computes where to move the snake's head 
+ *
+ * @param game_window       ncurses window buffer to write to  
+ * @param bufferx buffery   pointers to the x and y coordinates of the head
+ * @param dir               direction in which the head is moving
+ *
+ * @return snake's state
+*/
+enum State mov_head(WINDOW* game_window, int* bufferx, int* buffery, int dir)
 {
   char next;
   switch (dir) {
@@ -207,9 +242,16 @@ int mov_head(WINDOW* game_window, int* bufferx, int* buffery, int dir)
     return EATEN;
   }
 
-  return 0;
+  return GOOD;
 }
 
+/**
+ * Grows the snake and updates the position array
+ *
+ * @param game_window   ncurses window buffer to write to  
+ * @param snake array   of the snake's body's coordinates
+ * @param len           pointer to the length of the snake 
+*/
 void grow_snake(WINDOW* game_window, int snake[MAX_LEN][2], int* len)
 {
   ++*len;
@@ -223,6 +265,12 @@ void grow_snake(WINDOW* game_window, int snake[MAX_LEN][2], int* len)
   return;
 }
 
+/**
+ * Updates the position of the mouse
+ *    
+ * @param game_window   ncurses window buffer to write to  
+ * @param rx ry         pointers to the current coordinates of the mouse  
+*/
 void mouse(WINDOW* game_window, int* rx, int* ry)
 {
   mvwaddch(game_window, *ry, *rx, ' ');
