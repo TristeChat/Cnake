@@ -119,12 +119,12 @@ int game(WINDOW* game_window)
       case ERR: 
       default:
         state = mov_snake(game_window, snake, len, dir);
-        if (state == GAME_OVER) {
-          goto exit_loop;
-        }
-        else if (state == EATEN) {
-          mouse(game_window, &rx, &ry);
-          grow_snake(game_window, snake, &len);
+        switch (state) {
+          case GOOD: break;
+          case GAME_OVER: goto exit_loop; break;
+          case EATEN: 
+            mouse(game_window, &rx, &ry);
+            grow_snake(game_window, snake, &len);
         }
     } 
 
