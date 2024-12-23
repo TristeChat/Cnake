@@ -1,3 +1,5 @@
+// Utilize multithreading at some point
+
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
