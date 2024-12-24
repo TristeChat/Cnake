@@ -25,10 +25,10 @@ typedef struct Snake {
 } Snake;
 
 uint8_t game(WINDOW* game_window);
-void mouse(WINDOW* game_window, Snake snake, uint16_t* rx, uint16_t* ry);
-uint8_t mov_snake(WINDOW* game_window, Snake snake) ;
+void mouse(WINDOW* game_window, Snake* snake, uint16_t* rx, uint16_t* ry);
+uint8_t mov_snake(WINDOW* game_window, Snake* snake) ;
 uint8_t mov_head(WINDOW* game_window, uint16_t* bufferx, uint16_t* buffery, int dir);
-void grow_snake(WINDOW* game_window, Snake snake);
+void grow_snake(WINDOW* game_window, Snake* snake);
 
 /**
  * Main initializes the ncurses window 
@@ -88,19 +88,21 @@ uint8_t game(WINDOW* game_window)
 
   mvwaddch(game_window, starty, startx, '%');
   wrefresh(game_window);
-
-  mvprintw(DIMY + 1, 0, "Press any key to play.");
+  
+  move(DIMY + 1, 0);
+  clrtoeol();
+  printw("Press any key to play.");
   refresh();
   getch();
   move(DIMY + 1, 0);
   clrtoeol();
   refresh();
-  mvprintw(DIMY + 1, 0, "Press q(Q) to exit.");
+  printw("Press q(Q) to exit.");
   refresh();
 
   uint16_t rx;
   uint16_t ry;
-  mouse(game_window, snake, &rx, &ry);
+  mouse(game_window, &snake, &rx, &ry);
 
   while (1) {
     ch = wgetch(game_window);
@@ -111,7 +113,7 @@ uint8_t game(WINDOW* game_window)
         goto exit_loop;
         break;
       case 'm':
-        mouse(game_window,snake, &rx, &ry);
+        mouse(game_window, &snake, &rx, &ry);
         break;
       case KEY_UP:
       case KEY_DOWN:
@@ -120,13 +122,13 @@ uint8_t game(WINDOW* game_window)
         snake.direction = ch;
       case ERR: 
       default:
-        snake.snake_state = mov_snake(game_window, snake);
+        snake.snake_state = mov_snake(game_window, &snake);
         switch (snake.snake_state) {
           case ALIVE: break;
           case DEAD: goto exit_loop; break;
           case EATEN: 
-            mouse(game_window, snake, &rx, &ry);
-            grow_snake(game_window, snake);
+            mouse(game_window, &snake, &rx, &ry);
+            grow_snake(game_window, &snake);
         }
     } 
 
@@ -136,10 +138,11 @@ uint8_t game(WINDOW* game_window)
   
   move(DIMY + 1, 0);
   clrtoeol();
-  refresh();
   printw("Game over! Press r(R) to replay or press any other key to exit.");
+  refresh();
 
-  wgetch(game_window);
+  nodelay(game_window, FALSE);
+  ch = wgetch(game_window);
   switch (ch) {
     case 'r':
     case 'R':
@@ -155,14 +158,14 @@ uint8_t game(WINDOW* game_window)
  * @param snake         snake object with related information
  * @param rx ry         pointers to the current coordinates of the mouse  
 */
-void mouse(WINDOW* game_window, Snake snake, uint16_t* rx, uint16_t* ry)
+void mouse(WINDOW* game_window, Snake* snake, uint16_t* rx, uint16_t* ry)
 {
   mvwaddch(game_window, *ry, *rx, ' ');
   srand(time(NULL));
   *rx = rand() % (DIMX-2) + 1;
   *ry = rand() % (DIMY-2) + 1;
-  for (uint16_t i = 0; i < snake.len; i++) {
-    if (snake.snake_arr[i][0] == *rx || snake.snake_arr[i][1] == *ry) {
+  for (uint16_t i = 0; i < snake->len; i++) {
+    if (snake->snake_arr[i][0] == *rx || snake->snake_arr[i][1] == *ry) {
       mouse(game_window, snake, rx, ry);
       break;
     } 
@@ -178,7 +181,7 @@ void mouse(WINDOW* game_window, Snake snake, uint16_t* rx, uint16_t* ry)
  * @param snake         snake object with related information
  * @return              state of the game
 */
-uint8_t mov_snake(WINDOW* game_window, Snake snake) 
+uint8_t mov_snake(WINDOW* game_window, Snake* snake) 
 {
   // I think moving works but EATEN isn't being used idk why
   // -_-
@@ -191,35 +194,39 @@ uint8_t mov_snake(WINDOW* game_window, Snake snake)
   char next;
   uint8_t ret_val = ALIVE;
 
-  for (uint16_t i = 0; i <= snake.len-1 ; i++) {
-    bufferx = snake.snake_arr[i][0];
-    buffery = snake.snake_arr[i][1];
+  for (uint16_t i = 0; i <= snake->len-1 ; i++) {
+    bufferx = snake->snake_arr[i][0];
+    buffery = snake->snake_arr[i][1];
     mvwaddch(game_window, buffery, bufferx, ' ');
 
     switch (i) {
       case 0:
         prevx = bufferx;
         prevy = buffery;
-        ret_val = mov_head(game_window, &bufferx, &buffery, snake.direction);
+        ret_val = mov_head(game_window, &bufferx, &buffery, snake->direction);
         if (ret_val == DEAD) {
           return ret_val;
         }
         break;
       default:
-        if (ret_val == EATEN && i == snake.len) {
+        if (ret_val == EATEN && i == snake->len) {
           mvwaddch(game_window, buffery, bufferx, body); 
-          snake.snake_arr[++snake.len][0] = bufferx;
-          snake.snake_arr[snake.len][1] = buffery;
+          snake->snake_arr[++snake->len][0] = bufferx;
+          snake->snake_arr[snake->len][1] = buffery;
         }
 
         bufferx = prevx;
         buffery = prevy;
-        prevx = snake.snake_arr[i][0];
-        prevy = snake.snake_arr[i][1];
+        prevx = snake->snake_arr[i][0];
+        prevy = snake->snake_arr[i][1];
     }
 
-    snake.snake_arr[i][0] = bufferx;
-    snake.snake_arr[i][1] = buffery; 
+    snake->snake_arr[i][0] = bufferx;
+    snake->snake_arr[i][1] = buffery; 
+    mvwscanw(game_window, buffery, bufferx, "%c", &next);
+    if (next == body) {
+      return DEAD;
+    }
     mvwaddch(game_window, buffery, bufferx, body);
   }
 
@@ -279,14 +286,14 @@ uint8_t mov_head(WINDOW* game_window, uint16_t* bufferx, uint16_t* buffery, int 
  * @param game_window   ncurses window buffer to write to  
  * @param snake         snake object storing realted information
 */
-void grow_snake(WINDOW* game_window, Snake snake)
+void grow_snake(WINDOW* game_window, Snake* snake)
 {
-  ++snake.len;
-  uint16_t prevx = snake.snake_arr[snake.len-1][0];
-  uint16_t prevy = snake.snake_arr[snake.len-1][1];
+  ++snake->len;
+  uint16_t prevx = snake->snake_arr[snake->len-1][0];
+  uint16_t prevy = snake->snake_arr[snake->len-1][1];
 
-  snake.snake_arr[snake.len][0] = prevx;
-  snake.snake_arr[snake.len][1] = prevy;
+  snake->snake_arr[snake->len][0] = prevx;
+  snake->snake_arr[snake->len][1] = prevy;
   mvwaddch(game_window, prevy, prevx, '*');
   wrefresh(game_window);
   return;
