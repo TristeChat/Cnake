@@ -29,7 +29,5 @@ make
 ```
 
 ## Notes
-The optimized version is still unusable and very unstable. \
-To compile the optimized version use `make opt` instead of just `make`. \
 Avoid manually deleting the binary file, use `make clean` to avoid mistakes. \
-Debugging flags are available with `make debug` and `make optbug`.
+Debugging flags are available with `make debug`.
